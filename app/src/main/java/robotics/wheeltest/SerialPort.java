@@ -8,7 +8,6 @@ import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
-import com.hoho.android.usbserial.util.SerialPortListener;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,8 +25,8 @@ public class SerialPort {
     private SerialInputOutputManager mSerialIoManager;
     private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
     private UsbSerialPort port;
-    private SerialPortListener mListener;
-    public void addReadListener(SerialPortListener listener){
+    private SerialInputOutputManager.Listener mListener;
+    public void addReadListener(SerialInputOutputManager.Listener listener){
         mListener = listener;
     }
 

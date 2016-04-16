@@ -1,6 +1,6 @@
 package robotics.wheeltest;
 
-import com.hoho.android.usbserial.util.SerialPortListener;
+import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Created by Бацька on 11.04.2016.
  */
-public class PacketParser implements SerialPortListener {
+public class PacketParser implements SerialInputOutputManager.Listener {
 
     SerialPort serialPort;
     byte buffer[] = new byte[1024*256];
@@ -125,4 +125,6 @@ public class PacketParser implements SerialPortListener {
 
         return -1;
     }
+
+
 }

@@ -19,7 +19,12 @@ android {
     }
 }
 
+repositories {
+    maven { url "https://jitpack.io" }
+}
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.github.mik3y:usb-serial-for-android:master-SNAPSHOT'
     testCompile 'junit:junit:4.12'
 }
