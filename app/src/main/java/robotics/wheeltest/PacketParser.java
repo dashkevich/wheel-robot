@@ -2,17 +2,15 @@ package robotics.wheeltest;
 
 import com.hoho.android.usbserial.util.SerialPortListener;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
  * Created by Бацька on 11.04.2016.
  */
-public class PacketParser implements SerialPortListener{
+public class PacketParser implements SerialPortListener {
 
     SerialPort serialPort;
-
     byte buffer[] = new byte[1024*256];
     int position = 0;
     byte packet[];
@@ -52,7 +50,6 @@ public class PacketParser implements SerialPortListener{
         return pd;
     }
 
-
     @Override
     public void onNewData(byte[] data) {
         if(data.length < (buffer.length-position+1)){
@@ -64,7 +61,6 @@ public class PacketParser implements SerialPortListener{
 
         }
 
-
         if( parse() ){
             packets.add(new PacketData(packet));
         }
@@ -74,8 +70,6 @@ public class PacketParser implements SerialPortListener{
     public void onRunError(Exception e) {
 
     }
-
-
 
     private boolean parse(){
         //
@@ -92,7 +86,6 @@ public class PacketParser implements SerialPortListener{
             return false;
         }
 
-
         //если пакет найден
         if( (position - (start+4+1)) >= size){
             packet = new byte[size];
@@ -102,20 +95,17 @@ public class PacketParser implements SerialPortListener{
                 packet[i] = buffer[j++];
             }
 
-
             //сместить буфер
             int i = start+4+size+1;
             for(int j=0; i<position; i++,j++){
                 buffer[j] = buffer[i];
             }
 
-
             position = position - (start+4+size+1);
 
             if(position < 0){
                 position = 0;
             }
-
 
             return true;
         }
@@ -135,8 +125,4 @@ public class PacketParser implements SerialPortListener{
 
         return -1;
     }
-
-
-
-
 }

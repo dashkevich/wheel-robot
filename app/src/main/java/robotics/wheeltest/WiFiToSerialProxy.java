@@ -16,7 +16,6 @@ public class WiFiToSerialProxy extends Thread{
 
     private Socket socket;
     private SerialPort serialPort;
-
     private TextView debugView;
 
     Handler updateConversationHandler;
@@ -37,7 +36,7 @@ public class WiFiToSerialProxy extends Thread{
 
         try {
             in = socket.getInputStream();
-        }catch (IOException e){
+        } catch (IOException e){
             return;
         }
 

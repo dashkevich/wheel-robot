@@ -1,5 +1,6 @@
 package robotics.wheeltest;
 
+import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -7,13 +8,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
 
-import java.util.logging.Handler;
-
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     WiFiConnection connection;
     SerialPort serialPort;
@@ -59,7 +57,6 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         registerReceiver(mUsbReceiver, filter);
 
-
         serialPort = new SerialPort(this);
         packetParser = new PacketParser(serialPort);
 
@@ -69,10 +66,6 @@ public class MainActivity extends AppCompatActivity {
 
         serialPort.startIoManager();
 
-
-
-
-
         int i = 0;
         while(true){
             int n = packetParser.packetsAvailable();
@@ -81,9 +74,6 @@ public class MainActivity extends AppCompatActivity {
                 ++i;
             }
         }
-
-
-
 
 /*
         while(true) {
@@ -99,6 +89,4 @@ public class MainActivity extends AppCompatActivity {
         */
 
     }
-
-
 }
