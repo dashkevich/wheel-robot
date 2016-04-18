@@ -1,61 +1,69 @@
 package robotics.wheeltest;
 
 import android.app.Activity;
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbManager;
 import android.os.Bundle;
+import android.widget.ScrollView;
 import android.widget.TextView;
+
+import com.hoho.android.usbserial.util.HexDump;
+import com.jmedeisis.bugstick.Joystick;
+import com.jmedeisis.bugstick.JoystickListener;
+
+import java.nio.ByteBuffer;
 
 public class MainActivity extends Activity {
 
-    WiFiConnection connection;
-    SerialPort serialPort;
-    PacketParser packetParser;
+    private final String TAG = MainActivity.class.getSimpleName();
 
-    TextView textView;
+    private WiFiConnection connection;
+    private SerialPort serialPort;
+    private PacketParser packetParser;
+    private TextView result;
 
-    private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
-    private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
+    private Joystick joystick;
 
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (ACTION_USB_PERMISSION.equals(action)) {
-                synchronized (this) {
-                    UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+    private TextView mDumpTextView;
+    private ScrollView mScrollView;
 
-                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                        if(device != null){
-                            //call method to set up device communication
-                            //connect();
-                        }
-                    }
-                    else {
-                        //Log.d(TAG, "permission denied for device " + device);
-                    }
-                }
-            }
-        }
-    };
+    private void updateReceivedData(byte[] data) {
+        final String message = "Read " + data.length + " bytes: \n"
+                + HexDump.dumpHexString(data) + "\n\n";
+        mDumpTextView.append(message);
+        mScrollView.smoothScrollTo(0, mDumpTextView.getBottom());
+    }
+
+    private void updateLog(String message) {
+        mDumpTextView.append(message);
+        mScrollView.smoothScrollTo(0, mDumpTextView.getBottom());
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        textView = (TextView) findViewById(R.id.textView);
-        textView.setText("");
+        mDumpTextView = (TextView) findViewById(R.id.consoleText);
+        mScrollView = (ScrollView) findViewById(R.id.demoScroller);
+        result = (TextView) findViewById(R.id.textView);
+        joystick = (Joystick) findViewById(R.id.joystick);
+        joystick.setJoystickListener(new JoystickListener() {
+            @Override
+            public void onDown() {
+            }
 
-        //connection = new WiFiConnection();
-        //connection.startServer();
+            @Override
+            public void onDrag(float degrees, float offset) {
+                float vx = (float) Math.cos(degrees * Math.PI / 180f) * offset;
+                float vy = (float) Math.sin(degrees * Math.PI / 180f) * offset;
 
-        PendingIntent mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
-        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-        registerReceiver(mUsbReceiver, filter);
+                result.setText(Float.toString(vx) + "     " + Float.toString(vy));
+                serialPort.write(getPlatformParametersPacket(vx,vy));
+            }
+
+            @Override
+            public void onUp() {
+            }
+        });
 
         serialPort = new SerialPort(this);
         packetParser = new PacketParser(serialPort);
@@ -65,28 +73,26 @@ public class MainActivity extends Activity {
         }
 
         serialPort.startIoManager();
+    }
 
-        int i = 0;
-        while(true){
-            int n = packetParser.packetsAvailable();
-            if(n > 0){
-                PacketParser.PacketData p = packetParser.getPacket();
-                ++i;
-            }
-        }
 
-/*
-        while(true) {
-            byte buffer[] = {'+', 'I', 'P', 'D', 4, 1, 2, 3, 4};
-            //serialPort.write(buffer);
+    private byte[] getPlatformParametersPacket(float vx, float vy /* w */) {
+        ByteBuffer bb = ByteBuffer.allocate(70);
 
-            try {
-                Thread.sleep(500);
-            }catch (InterruptedException ex){
+        bb.put("+IPD".getBytes());
+        bb.put((byte)(4 * 3 + 1));
+        bb.put((byte)1);
+        bb.putInt(Float.floatToIntBits(vx));
+        bb.putInt(Float.floatToIntBits(vy));
+        // TODO put w bb.putFloat(w);
+        bb.putInt(Float.floatToIntBits(0.0f));
 
-            }
-        }
-        */
 
+        /*byte buffer[] = {'+', 'I', 'P', 'D', 1};
+        bb.put(buffer);
+        bb.put(Integer.toString(4 * 3 + 1).getBytes());
+
+*/
+        return bb.array();
     }
 }
