@@ -47,17 +47,26 @@ public class MainActivity extends Activity {
         result = (TextView) findViewById(R.id.textView);
         joystick = (Joystick) findViewById(R.id.joystick);
         joystick.setJoystickListener(new JoystickListener() {
+
+            private int count;
+            private float vx, vy;
+            private int sampling = 5;
+
             @Override
             public void onDown() {
             }
 
             @Override
             public void onDrag(float degrees, float offset) {
-                float vx = (float) Math.cos(degrees * Math.PI / 180f) * offset;
-                float vy = (float) Math.sin(degrees * Math.PI / 180f) * offset;
+                ++count;
 
-                result.setText(Float.toString(vx) + "     " + Float.toString(vy));
-                serialPort.write(getPlatformParametersPacket(vx,vy));
+                vx = (float) Math.cos(degrees * Math.PI / 180f) * offset;
+                vy = (float) Math.sin(degrees * Math.PI / 180f) * offset;
+
+                if( (count % sampling) == 0) {
+                    result.setText(Float.toString(vx) + "     " + Float.toString(vy));
+                    serialPort.write(getPlatformParametersPacket(vx, vy));
+                }
             }
 
             @Override
