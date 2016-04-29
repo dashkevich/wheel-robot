@@ -3,6 +3,7 @@ package robotics.wheeltest;
 import android.content.Context;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
+import android.util.Log;
 
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
@@ -62,6 +63,7 @@ public class SerialPort {
             return false;
         }
 
+        Log.i("port is", port.toString());
         return true;
     }
 

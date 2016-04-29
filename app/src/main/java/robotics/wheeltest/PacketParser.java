@@ -15,23 +15,8 @@ public class PacketParser implements SerialInputOutputManager.Listener {
     int position = 0;
     byte packet[];
 
-    class PacketData{
-        private byte data[];
 
-        PacketData(byte[] data){
-            this.data = data;
-        }
-
-        public byte[] getData() {
-            return data;
-        }
-
-        public void setData(byte[] data) {
-            this.data = data;
-        }
-    }
-
-    private List<PacketData> packets;
+    private List<DataPacket> packets;
 
     PacketParser(SerialPort serialPort){
         packets = new LinkedList<>();
@@ -40,29 +25,36 @@ public class PacketParser implements SerialInputOutputManager.Listener {
         serialPort.addReadListener(this);
     }
 
-    public int packetsAvailable(){
+    public synchronized int packetsAvailable(){
         return packets.size();
     }
 
-    public PacketData getPacket(){
-        PacketData pd = packets.get(0);
-        packets.remove(0);
+    public DataPacket getPacket(){
+
+        DataPacket pd;
+        synchronized (packets) {
+            pd = packets.get(0);
+            packets.remove(0);
+        }
         return pd;
     }
 
     @Override
     public void onNewData(byte[] data) {
         if(data.length < (buffer.length-position+1)){
-
             for (int i=0; i<data.length; i++){
                 buffer[position] = data[i];
                 ++position;
             }
-
         }
 
-        if( parse() ){
-            packets.add(new PacketData(packet));
+        //если найден пакет с даными
+        if (parse()) {
+            synchronized (packets) {
+                DataPacket dataPacket = new DataPacket();
+                dataPacket.setData(packet);
+                packets.add(dataPacket);
+            }
         }
     }
 

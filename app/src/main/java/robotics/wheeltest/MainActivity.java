@@ -2,13 +2,11 @@ package robotics.wheeltest;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.widget.ScrollView;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
-import com.hoho.android.usbserial.util.HexDump;
-import com.jmedeisis.bugstick.Joystick;
-import com.jmedeisis.bugstick.JoystickListener;
-
+import java.net.Socket;
 import java.nio.ByteBuffer;
 
 public class MainActivity extends Activity {
@@ -18,90 +16,68 @@ public class MainActivity extends Activity {
     private WiFiConnection connection;
     private SerialPort serialPort;
     private PacketParser packetParser;
-    private TextView result;
+    private WiFiToSerialProxy wiFiToSerialProxy;
 
-    private Joystick joystick;
+    //UI
+    private TextView textView;
+    private Button button;
 
-    private TextView mDumpTextView;
-    private ScrollView mScrollView;
-
-    private void updateReceivedData(byte[] data) {
-        final String message = "Read " + data.length + " bytes: \n"
-                + HexDump.dumpHexString(data) + "\n\n";
-        mDumpTextView.append(message);
-        mScrollView.smoothScrollTo(0, mDumpTextView.getBottom());
-    }
-
-    private void updateLog(String message) {
-        mDumpTextView.append(message);
-        mScrollView.smoothScrollTo(0, mDumpTextView.getBottom());
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mDumpTextView = (TextView) findViewById(R.id.consoleText);
-        mScrollView = (ScrollView) findViewById(R.id.demoScroller);
-        result = (TextView) findViewById(R.id.textView);
-        joystick = (Joystick) findViewById(R.id.joystick);
-        joystick.setJoystickListener(new JoystickListener() {
-
-            private int count;
-            private float vx, vy;
-            private int sampling = 5;
-
+        textView = (TextView)findViewById(R.id.textView);
+        button = (Button)findViewById(R.id.button);
+        button.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onDown() {
+            public void onClick(View v) {
+                textView.append("Init...\n");
+                int err = init();
+                textView.append("Init status: " + err);
             }
+        });
+    }
 
+    int init(){
+
+        //init serial port
+        serialPort = new SerialPort(this);
+        if(!serialPort.connect()){
+            return -1;
+        }
+        serialPort.startIoManager();
+
+
+        packetParser = new PacketParser(serialPort);
+
+        connection = new WiFiConnection();
+
+        wiFiToSerialProxy = new WiFiToSerialProxy(serialPort, packetParser);
+
+        textView.append("Start server socket\n");
+
+        connection.addNewClientEvent(new WiFiConnection.OnNewClientEvent() {
             @Override
-            public void onDrag(float degrees, float offset) {
-                ++count;
+            public void onConnect(Socket socket) {
+                //textView.append("Client connected\n");
 
-                vx = (float) Math.cos(degrees * Math.PI / 180f) * offset;
-                vy = (float) Math.sin(degrees * Math.PI / 180f) * offset;
-
-                if( (count % sampling) == 0) {
-                    result.setText(Float.toString(vx) + "     " + Float.toString(vy));
-                    serialPort.write(getPlatformParametersPacket(vx, vy));
-                }
-            }
-
-            @Override
-            public void onUp() {
+                wiFiToSerialProxy.addSocket(socket);
+                //textView.append("SerialProxy started\n");
             }
         });
 
-        serialPort = new SerialPort(this);
-        packetParser = new PacketParser(serialPort);
+        connection.startServer();
+        wiFiToSerialProxy.start();
 
-        if(!serialPort.connect()){
-            return;
-        }
+        /*
 
-        serialPort.startIoManager();
+        */
+
+        return 0;
     }
 
 
-    private byte[] getPlatformParametersPacket(float vx, float vy /* w */) {
-        ByteBuffer bb = ByteBuffer.allocate(70);
 
-        bb.put("+IPD".getBytes());
-        bb.put((byte)(4 * 3 + 1));
-        bb.put((byte)1);
-        bb.putInt(Float.floatToIntBits(vx));
-        bb.putInt(Float.floatToIntBits(vy));
-        // TODO put w bb.putFloat(w);
-        bb.putInt(Float.floatToIntBits(0.0f));
-
-
-        /*byte buffer[] = {'+', 'I', 'P', 'D', 1};
-        bb.put(buffer);
-        bb.put(Integer.toString(4 * 3 + 1).getBytes());
-
-*/
-        return bb.array();
-    }
 }

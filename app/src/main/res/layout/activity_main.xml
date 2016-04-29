@@ -8,43 +8,27 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="robotics.wheeltest.MainActivity">
+    tools:context="robotics.wheeltest.MainActivity"
+    android:weightSum="1">
 
     <ScrollView
-        android:id="@+id/demoScroller"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1">
+        android:layout_height="288dp"
+        android:id="@+id/scrollView" >
 
         <TextView
-            android:id="@+id/consoleText"
-            android:textIsSelectable="true"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:typeface="monospace" />
+            android:id="@+id/textView" />
     </ScrollView>
 
-    <TextView
-        android:layout_width="match_parent"
+    <Button
+        android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:id="@+id/textView"
-        android:gravity="center_horizontal" />
-
-    <com.jmedeisis.bugstick.Joystick
-        android:id="@+id/joystick"
-        android:layout_width="200dp"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bg_base"
-        android:layout_gravity="center_horizontal">
-
-        <!-- You may use any View here. -->
-        <Button
-            android:layout_width="70dp"
-            android:layout_height="70dp"
-            android:background="@drawable/bg_stick" />
-
-    </com.jmedeisis.bugstick.Joystick>
+        android:text="Start"
+        android:id="@+id/button"
+        android:layout_gravity="center_horizontal"
+        android:layout_weight="0.35" />
 </LinearLayout>
 
 
