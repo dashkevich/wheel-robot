@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.net.Socket;
@@ -17,6 +18,7 @@ public class MainActivity extends Activity {
     private SerialPort serialPort;
     private PacketParser packetParser;
     private WiFiToSerialProxy wiFiToSerialProxy;
+    public TextView scrollView;
 
     //UI
     private TextView textView;
@@ -29,6 +31,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         textView = (TextView)findViewById(R.id.textView);
+        scrollView = (TextView) findViewById(R.id.textView);
         button = (Button)findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -54,7 +57,7 @@ public class MainActivity extends Activity {
 
         connection = new WiFiConnection();
 
-        wiFiToSerialProxy = new WiFiToSerialProxy(serialPort, packetParser);
+        wiFiToSerialProxy = new WiFiToSerialProxy(serialPort, packetParser, this);
 
         textView.append("Start server socket\n");
 

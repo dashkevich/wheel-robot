@@ -5,6 +5,8 @@ import com.hoho.android.usbserial.util.SerialInputOutputManager;
 import java.util.LinkedList;
 import java.util.List;
 
+import robotics.wheeltest.Packets.RawDataPacket;
+
 /**
  * Created by Бацька on 11.04.2016.
  */
@@ -16,7 +18,7 @@ public class PacketParser implements SerialInputOutputManager.Listener {
     byte packet[];
 
 
-    private List<DataPacket> packets;
+    private List<RawDataPacket> packets;
 
     PacketParser(SerialPort serialPort){
         packets = new LinkedList<>();
@@ -29,9 +31,9 @@ public class PacketParser implements SerialInputOutputManager.Listener {
         return packets.size();
     }
 
-    public DataPacket getPacket(){
+    public RawDataPacket getPacket(){
 
-        DataPacket pd;
+        RawDataPacket pd;
         synchronized (packets) {
             pd = packets.get(0);
             packets.remove(0);
@@ -51,9 +53,9 @@ public class PacketParser implements SerialInputOutputManager.Listener {
         //если найден пакет с даными
         if (parse()) {
             synchronized (packets) {
-                DataPacket dataPacket = new DataPacket();
-                dataPacket.setData(packet);
-                packets.add(dataPacket);
+                RawDataPacket rawDataPacket = new RawDataPacket();
+                rawDataPacket.setData(packet);
+                packets.add(rawDataPacket);
             }
         }
     }

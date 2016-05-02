@@ -5,11 +5,19 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import robotics.wheeltest.Packets.ControlPacket;
+import robotics.wheeltest.Packets.MotorsPowerPacket;
+import robotics.wheeltest.Packets.Packet;
+import robotics.wheeltest.Packets.RawDataPacket;
+import robotics.wheeltest.Packets.SettingsPacket;
 
 /**
  * Created by Бацька on 10.04.2016.
@@ -21,19 +29,32 @@ public class WiFiToSerialProxy extends Thread{
     private List<CommunicationThread> connections;
     private SerialPort serialPort;
     private PacketParser packetParser;
+
     private Timer controlTimer;
     private Timer pingTimer;
-    List<DataPacket> packetsBuffer;
-    DataPacket controlPacket;
 
-    WiFiToSerialProxy(SerialPort port, PacketParser packetParser){
+    List<RawDataPacket> packetsBuffer;  //raw packets data from wifi connections
+    ControlPacket controlPacket;
+
+    private MainActivity context;
+
+    WiFiToSerialProxy(SerialPort port, PacketParser packetParser, MainActivity context) {
         connections = new ArrayList<>();
         serialPort = port;
         this.packetParser = packetParser;
         controlTimer = new Timer();
         pingTimer = new Timer();
         packetsBuffer = new LinkedList<>();
-        controlPacket = new DataPacket();
+        this.context = context;
+
+        //костыль 3
+        controlPacket = new ControlPacket();
+        ByteBuffer bb = ByteBuffer.allocate(12);
+        bb.putFloat(0);
+        bb.putFloat(0);
+        bb.putFloat(0);
+        controlPacket.FromRawPacket(new RawDataPacket(bb.array()));
+
     }
 
     public void addSocket(Socket s){
@@ -52,7 +73,13 @@ public class WiFiToSerialProxy extends Thread{
         controlTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                    serialPort.write(getPlatformPacket(controlPacket.getData()));
+                    sendPacketToSerialPort(controlPacket, Packet.WheelsRobotUsartPacketType.PlatformParameters);
+                    context.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            context.scrollView.setText(Arrays.toString(controlPacket.ToByteArray()));
+                        }
+                    });
             }
         }, 1000 , 100);
 
@@ -76,11 +103,31 @@ public class WiFiToSerialProxy extends Thread{
             synchronized (packetsBuffer) {
                 for (int i = 0; i < packetsBuffer.size(); i++) {
 
-                    //если управляющий пакет, сохраняем его в controlPacket
-                    if (packetsBuffer.get(i).getType() == 100) {
-                        controlPacket.setData(packetsBuffer.get(i).getData());
-                        packetsBuffer.remove(i);
+                    RawDataPacket packet = packetsBuffer.get(i);
+
+
+                    if (packet.getType() == Packet.WheelsRobotWiFiPacketType.PlatformParameters.getValue()) {
+
+                        //save current control packet
+                        this.controlPacket.FromRawPacket(packet);
+
+                    }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.MotorsPower.getValue()){
+
+                        //send packet to serial port
+                        sendPacketToSerialPort(new MotorsPowerPacket(packet), Packet.WheelsRobotUsartPacketType.MotorsPower);
+
+                    }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.Settings.getValue()){
+
+                        //save packet to file and send to serial port
+                        sendPacketToSerialPort(new SettingsPacket(packet), Packet.WheelsRobotUsartPacketType.Settings);
+
+                    }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.GetSettings.getValue()){
+
+                        //send current settings to wifi
+
                     }
+
+                    packetsBuffer.remove(i);
                 }
             }
 
@@ -88,8 +135,10 @@ public class WiFiToSerialProxy extends Thread{
             int count = packetParser.packetsAvailable();
             if(count > 0){
                 for(int i=0; i<count; i++){
-                    for(int j=0; j<connections.size(); j++){
-                        connections.get(i).write(packetParser.getPacket().getData());
+
+                    RawDataPacket packet = packetParser.getPacket();
+                    if(packet.getType() == Packet.WheelsRobotUsartPacketType.Telemetry.getValue()) {
+                        sendPacketToWiFi(packet, Packet.WheelsRobotWiFiPacketType.Telemetry);
                     }
                 }
             }
@@ -100,23 +149,43 @@ public class WiFiToSerialProxy extends Thread{
         pingTimer.cancel();
     }
 
-    private byte[] getPlatformPacket(byte data[]) {
-        ByteBuffer bb = ByteBuffer.allocate(4+1+data.length);
+    private void sendPacketToSerialPort(Packet packet, Packet.WheelsRobotUsartPacketType type){
 
-        bb.put("+IPD".getBytes()); // header
-        bb.put((byte) (data.length)); //data size
-        bb.put(data); // [ [type(1 byte)][data(data.length-1 bytes)] ]
+        byte[] packetData = packet.ToByteArray();
+        ByteBuffer bb = ByteBuffer.allocate(4+1+1+packetData.length);
 
-        return bb.array();
+        bb.put("+IPD".getBytes());
+        bb.put((byte) (packetData.length));
+        bb.put((byte)type.getValue());
+        bb.put(packetData);
+
+        serialPort.write(bb.array());
     }
 
+    //send packets from serial port to all wifi connections
+    private void sendPacketToWiFi(RawDataPacket packet, Packet.WheelsRobotWiFiPacketType type){
+
+        for(int i=0; i<connections.size(); i++){
+
+            byte[] data = packet.getData();
+            ByteBuffer buffer = ByteBuffer.allocate(4 + 1 + data.length);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(data.length);
+            buffer.put((byte) type.getValue());
+            buffer.put(data);
+
+            connections.get(i).write(buffer.array());
+        }
+    }
+
+
+    //serial port ping packet
     private byte[] getPingPacket() {
-        ByteBuffer bb = ByteBuffer.allocate(4+1+2);
+        ByteBuffer bb = ByteBuffer.allocate(6);
 
         bb.put("+IPD".getBytes()); // header
-        bb.put((byte)(2)); //data size
-        bb.put((byte)0); //data type
-        bb.put((byte)1); //data
+        bb.put((byte)(1)); //data size
+        bb.put((byte) Packet.WheelsRobotUsartPacketType.Ping.getValue()); //data type
 
         return bb.array();
     }
@@ -139,15 +208,14 @@ public class WiFiToSerialProxy extends Thread{
             }
         }
 
-        public void write(byte[] data){
+        public boolean write(byte[] data){
             try {
-                //write data size (4 bytes).
-                out.write(ByteBuffer.allocate(4).putInt(data.length).array());
-                //write data
                 out.write(data);
             }catch (IOException e){
-
+                return false;
             }
+
+            return true;
         }
 
         public void run() {
@@ -169,7 +237,8 @@ public class WiFiToSerialProxy extends Thread{
                             continue;
                         }
                         in.read(sizeBuff,0,4);
-                        blockSize = ByteBuffer.wrap(sizeBuff).getInt();
+                        //convert from c/c++ little endian to java big endian
+                        blockSize = ByteBuffer.wrap(sizeBuff).order(ByteOrder.LITTLE_ENDIAN).getInt();
                     }
 
                     if(in.available() < blockSize){
@@ -179,16 +248,16 @@ public class WiFiToSerialProxy extends Thread{
 
                     n = in.read(buffer, 0, blockSize);
 
-                    DataPacket packet = new DataPacket();
-                    packet.setType(buffer[0]);
-                    packet.setDataSize(n-1);
-                    byte[] data = packet.getData();
-                    for (int i=1; i<n; i++){
-                        data[i] = buffer[i];
-                    }
+                    //create raw data packet
+                    byte[] data = new byte[n-1];
+                    System.arraycopy(buffer,1,data,0,n-1);
+                    RawDataPacket rawDataPacket = new RawDataPacket();
+                    rawDataPacket.setType(buffer[0]);
+                    rawDataPacket.setData(data);
+
 
                     synchronized (packetsBuffer){
-                        packetsBuffer.add(packet);
+                        packetsBuffer.add(rawDataPacket);
                     }
 
                     blockSize = 0;
