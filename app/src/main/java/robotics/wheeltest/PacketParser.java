@@ -2,6 +2,8 @@ package robotics.wheeltest;
 
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -54,7 +56,12 @@ public class PacketParser implements SerialInputOutputManager.Listener {
         if (parse()) {
             synchronized (packets) {
                 RawDataPacket rawDataPacket = new RawDataPacket();
-                rawDataPacket.setData(packet);
+
+                byte[] b = new byte[packet.length-1];
+                System.arraycopy(packet,1,b,0,packet.length-1);
+
+                rawDataPacket.setData(b);
+                rawDataPacket.setType(packet[0]);
                 packets.add(rawDataPacket);
             }
         }

@@ -50,10 +50,10 @@ public class MainActivity extends Activity {
         if(!serialPort.connect()){
             return -1;
         }
-        serialPort.startIoManager();
-
 
         packetParser = new PacketParser(serialPort);
+
+        serialPort.startIoManager();
 
         connection = new WiFiConnection();
 

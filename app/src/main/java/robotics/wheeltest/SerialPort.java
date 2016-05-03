@@ -27,6 +27,7 @@ public class SerialPort {
     private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
     private UsbSerialPort port;
     private SerialInputOutputManager.Listener mListener;
+
     public void addReadListener(SerialInputOutputManager.Listener listener){
         mListener = listener;
     }

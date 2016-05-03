@@ -1,7 +1,12 @@
 package robotics.wheeltest;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -35,6 +40,7 @@ public class WiFiToSerialProxy extends Thread{
 
     List<RawDataPacket> packetsBuffer;  //raw packets data from wifi connections
     ControlPacket controlPacket;
+    SettingsPacket settingsPacket;
 
     private MainActivity context;
 
@@ -68,6 +74,12 @@ public class WiFiToSerialProxy extends Thread{
 
     @Override
     public void run() {
+
+        //read settings packet from file and send this to serial port
+        settingsPacket = new SettingsPacketManager().readSettingsPacketFromFile();
+        if(settingsPacket != null){
+            sendPacketToSerialPort(settingsPacket, Packet.WheelsRobotUsartPacketType.Settings);
+        }
 
         //запуск таймера отправки пакетов в ком порт с частотой 10Гц
         controlTimer.schedule(new TimerTask() {
@@ -119,11 +131,20 @@ public class WiFiToSerialProxy extends Thread{
                     }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.Settings.getValue()){
 
                         //save packet to file and send to serial port
-                        sendPacketToSerialPort(new SettingsPacket(packet), Packet.WheelsRobotUsartPacketType.Settings);
+                        settingsPacket = new SettingsPacket(packet);
+                        SettingsPacketManager settingsPacketManager = new SettingsPacketManager();
+                        if( !settingsPacketManager.saveSettingsPacketToFile(settingsPacket) ){
+                            //saving settings error!
+                        }
+
+                        sendPacketToSerialPort(settingsPacket, Packet.WheelsRobotUsartPacketType.Settings);
 
                     }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.GetSettings.getValue()){
 
                         //send current settings to wifi
+                        if(settingsPacket != null) {
+                            sendPacketToWiFi(new RawDataPacket(settingsPacket.ToByteArray()), Packet.WheelsRobotWiFiPacketType.Settings);
+                        }
 
                     }
 
@@ -149,6 +170,8 @@ public class WiFiToSerialProxy extends Thread{
         pingTimer.cancel();
     }
 
+
+
     private void sendPacketToSerialPort(Packet packet, Packet.WheelsRobotUsartPacketType type){
 
         byte[] packetData = packet.ToByteArray();
@@ -170,7 +193,7 @@ public class WiFiToSerialProxy extends Thread{
             byte[] data = packet.getData();
             ByteBuffer buffer = ByteBuffer.allocate(4 + 1 + data.length);
             buffer.order(ByteOrder.LITTLE_ENDIAN);
-            buffer.putInt(data.length);
+            buffer.putInt(data.length+1);
             buffer.put((byte) type.getValue());
             buffer.put(data);
 
@@ -267,6 +290,50 @@ public class WiFiToSerialProxy extends Thread{
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    class SettingsPacketManager{
+
+        private final String filename = "settings_packet.bin";
+
+        public boolean saveSettingsPacketToFile(SettingsPacket packet){
+
+            try {
+                FileOutputStream fileOutputStream = context.openFileOutput(filename, context.MODE_PRIVATE);
+
+                ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+                objectOutputStream.writeObject(packet);
+                objectOutputStream.close();
+
+                fileOutputStream.close();
+            } catch (FileNotFoundException e) {
+                return false;
+            }catch(IOException e){
+                return false;
+            }
+            return true;
+        }
+
+        public  SettingsPacket readSettingsPacketFromFile(){
+
+            SettingsPacket settingsPacket = null;
+
+            try {
+                FileInputStream fileInputStream = context.openFileInput(filename);
+
+                ObjectInputStream objectInputStreams = new ObjectInputStream(fileInputStream);
+                settingsPacket = (SettingsPacket) objectInputStreams.readObject();
+                objectInputStreams.close();
+
+                fileInputStream.close();
+            } catch (IOException e) {
+
+            }catch (ClassNotFoundException e){
+
+            }
+
+            return settingsPacket;
         }
     }
 

@@ -14,6 +14,10 @@ public class SettingsPacket extends Packet {
         this.FromRawPacket(rawDataPacket);
     }
 
+    public SettingsPacket(){
+
+    }
+
     @Override
     public byte[] ToByteArray() {
         //convert java big endian to c/c++ little endian
