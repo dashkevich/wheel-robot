@@ -1,4 +1,4 @@
-package robotics.wheeltest;
+package robotics.wheeltestpatefon;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -18,11 +18,11 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import robotics.wheeltest.Packets.ControlPacket;
-import robotics.wheeltest.Packets.MotorsPowerPacket;
-import robotics.wheeltest.Packets.Packet;
-import robotics.wheeltest.Packets.RawDataPacket;
-import robotics.wheeltest.Packets.SettingsPacket;
+import robotics.wheeltestpatefon.Packets.ControlPacket;
+import robotics.wheeltestpatefon.Packets.MotorsPowerPacket;
+import robotics.wheeltestpatefon.Packets.Packet;
+import robotics.wheeltestpatefon.Packets.RawDataPacket;
+import robotics.wheeltestpatefon.Packets.SettingsPacket;
 
 /**
  * Created by Бацька on 10.04.2016.
@@ -178,7 +178,7 @@ public class WiFiToSerialProxy extends Thread{
         ByteBuffer bb = ByteBuffer.allocate(4+1+1+packetData.length);
 
         bb.put("+IPD".getBytes());
-        bb.put((byte) (packetData.length));
+        bb.put((byte) (packetData.length+1));
         bb.put((byte)type.getValue());
         bb.put(packetData);
 

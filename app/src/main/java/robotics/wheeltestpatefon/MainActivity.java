@@ -1,14 +1,12 @@
-package robotics.wheeltest;
+package robotics.wheeltestpatefon;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.net.Socket;
-import java.nio.ByteBuffer;
 
 public class MainActivity extends Activity {
 

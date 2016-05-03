@@ -1,13 +1,11 @@
-package robotics.wheeltest;
+package robotics.wheeltestpatefon;
 
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import robotics.wheeltest.Packets.RawDataPacket;
+import robotics.wheeltestpatefon.Packets.RawDataPacket;
 
 /**
  * Created by Бацька on 11.04.2016.

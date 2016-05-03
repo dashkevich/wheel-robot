@@ -1,12 +1,9 @@
-package robotics.wheeltest;
+package robotics.wheeltestpatefon;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by Бацька on 09.04.2016.

@@ -1,4 +1,4 @@
-package robotics.wheeltest.Packets;
+package robotics.wheeltestpatefon.Packets;
 
 /**
  * Created by Бацька on 28.04.2016.

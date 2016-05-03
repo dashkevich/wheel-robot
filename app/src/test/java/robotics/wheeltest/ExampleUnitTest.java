@@ -1,4 +1,4 @@
-package robotics.wheeltest;
+package robotics.wheeltestpatefon;
 
 import org.junit.Test;
 
