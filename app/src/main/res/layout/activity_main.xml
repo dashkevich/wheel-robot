@@ -11,9 +11,19 @@
     tools:context="robotics.wheeltestpatefon.MainActivity"
     android:weightSum="1">
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView2" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView3" />
+
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="288dp"
+        android:layout_height="212dp"
         android:id="@+id/scrollView" >
 
         <TextView
@@ -29,6 +39,7 @@
         android:id="@+id/button"
         android:layout_gravity="center_horizontal"
         android:layout_weight="0.35" />
+
 </LinearLayout>
 
 

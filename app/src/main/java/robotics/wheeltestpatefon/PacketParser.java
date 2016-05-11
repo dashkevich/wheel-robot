@@ -50,6 +50,8 @@ public class PacketParser implements SerialInputOutputManager.Listener {
             }
         }
 
+
+
         //если найден пакет с даными
         if (parse()) {
             synchronized (packets) {

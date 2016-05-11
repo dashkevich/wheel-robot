@@ -75,12 +75,12 @@ public class SerialPort {
     public void closeConnection(){
         try {
             port.close();
-        } catch (IOException e2) {
+        } catch (IOException e) {
             // Ignore.
         }
     }
 
-    private void stopIoManager() {
+    public void stopIoManager() {
         if (mSerialIoManager != null) {
             mSerialIoManager.stop();
             mSerialIoManager = null;

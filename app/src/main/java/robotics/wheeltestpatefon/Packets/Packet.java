@@ -7,13 +7,20 @@ package robotics.wheeltestpatefon.Packets;
 abstract public class Packet {
 
 
+    /*
+    WheelsRobotWiFiPacketType { MotorsPower = 1, WheelsVelocities, PlatformParameters, Telemetry, Settings, GetSettings, Text };
+    WheelsRobotUsartPacketType : uint8_t { MotorsPower = 1, WheelsVelocities, PlatformParameters, Telemetry, Settings, Ping, Text };
+    * */
+
     public enum WheelsRobotWiFiPacketType {
 
         MotorsPower(1),
-        PlatformParameters(2),
-        Telemetry(3),
-        Settings(4),
-        GetSettings(5);
+        WheelsVelocities(2),
+        PlatformParameters(3),
+        Telemetry(4),
+        Settings(5),
+        GetSettings(6),
+        Text(7);
 
         private int value;
 
@@ -29,10 +36,12 @@ abstract public class Packet {
     public enum WheelsRobotUsartPacketType {
 
         MotorsPower(1),
-        PlatformParameters(2),
-        Telemetry(3),
-        Settings(4),
-        Ping(5);
+        WheelsVelocities(2),
+        PlatformParameters(3),
+        Telemetry(4),
+        Settings(5),
+        Ping(6),
+        Text(7);
 
         private int value;
 

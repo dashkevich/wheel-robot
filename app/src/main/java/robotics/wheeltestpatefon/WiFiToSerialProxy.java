@@ -23,6 +23,8 @@ import robotics.wheeltestpatefon.Packets.MotorsPowerPacket;
 import robotics.wheeltestpatefon.Packets.Packet;
 import robotics.wheeltestpatefon.Packets.RawDataPacket;
 import robotics.wheeltestpatefon.Packets.SettingsPacket;
+import robotics.wheeltestpatefon.Packets.TextPacket;
+import robotics.wheeltestpatefon.Packets.WheelsVelocitiesPacket;
 
 /**
  * Created by Бацька on 10.04.2016.
@@ -40,7 +42,12 @@ public class WiFiToSerialProxy extends Thread{
 
     List<RawDataPacket> packetsBuffer;  //raw packets data from wifi connections
     ControlPacket controlPacket;
+    MotorsPowerPacket motorsPowerPacket;
     SettingsPacket settingsPacket;
+    WheelsVelocitiesPacket wheelsVelocitiesPacket;
+
+    //type of last recieved control packet;
+    Packet.WheelsRobotWiFiPacketType lastControlPacketType;
 
     private MainActivity context;
 
@@ -54,6 +61,7 @@ public class WiFiToSerialProxy extends Thread{
         this.context = context;
 
         //костыль 3
+        lastControlPacketType = Packet.WheelsRobotWiFiPacketType.PlatformParameters;
         controlPacket = new ControlPacket();
         ByteBuffer bb = ByteBuffer.allocate(12);
         bb.putFloat(0);
@@ -78,14 +86,22 @@ public class WiFiToSerialProxy extends Thread{
         //read settings packet from file and send this to serial port
         settingsPacket = new SettingsPacketManager().readSettingsPacketFromFile();
         if(settingsPacket != null){
-            sendPacketToSerialPort(settingsPacket, Packet.WheelsRobotUsartPacketType.Settings);
+            //sendPacketToSerialPort(settingsPacket, Packet.WheelsRobotUsartPacketType.Settings);
         }
 
         //запуск таймера отправки пакетов в ком порт с частотой 10Гц
         controlTimer.schedule(new TimerTask() {
             @Override
             public void run() {
+
+
+                if(lastControlPacketType == Packet.WheelsRobotWiFiPacketType.PlatformParameters) {
                     sendPacketToSerialPort(controlPacket, Packet.WheelsRobotUsartPacketType.PlatformParameters);
+                }else if (lastControlPacketType == Packet.WheelsRobotWiFiPacketType.MotorsPower){
+                    sendPacketToSerialPort(motorsPowerPacket, Packet.WheelsRobotUsartPacketType.MotorsPower);
+                }else if(lastControlPacketType == Packet.WheelsRobotWiFiPacketType.WheelsVelocities){
+                    sendPacketToSerialPort(wheelsVelocitiesPacket, Packet.WheelsRobotUsartPacketType.WheelsVelocities);
+                }
                     context.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -117,16 +133,24 @@ public class WiFiToSerialProxy extends Thread{
 
                     RawDataPacket packet = packetsBuffer.get(i);
 
+                    if(packet.getType() == Packet.WheelsRobotWiFiPacketType.WheelsVelocities.getValue()){
 
-                    if (packet.getType() == Packet.WheelsRobotWiFiPacketType.PlatformParameters.getValue()) {
+                        //save packet
+                        this.wheelsVelocitiesPacket = new WheelsVelocitiesPacket(packet);
+                        lastControlPacketType = Packet.WheelsRobotWiFiPacketType.WheelsVelocities;
+
+                    }else if (packet.getType() == Packet.WheelsRobotWiFiPacketType.PlatformParameters.getValue()) {
 
                         //save current control packet
                         this.controlPacket.FromRawPacket(packet);
+                        lastControlPacketType = Packet.WheelsRobotWiFiPacketType.PlatformParameters;
 
                     }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.MotorsPower.getValue()){
 
+                        motorsPowerPacket = new MotorsPowerPacket(packet);
+                        lastControlPacketType = Packet.WheelsRobotWiFiPacketType.MotorsPower;
                         //send packet to serial port
-                        sendPacketToSerialPort(new MotorsPowerPacket(packet), Packet.WheelsRobotUsartPacketType.MotorsPower);
+                        //sendPacketToSerialPort(motorsPowerPacket, Packet.WheelsRobotUsartPacketType.MotorsPower);
 
                     }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.Settings.getValue()){
 
@@ -135,6 +159,7 @@ public class WiFiToSerialProxy extends Thread{
                         SettingsPacketManager settingsPacketManager = new SettingsPacketManager();
                         if( !settingsPacketManager.saveSettingsPacketToFile(settingsPacket) ){
                             //saving settings error!
+                            context.textView3.setText("save error");
                         }
 
                         sendPacketToSerialPort(settingsPacket, Packet.WheelsRobotUsartPacketType.Settings);
@@ -146,6 +171,8 @@ public class WiFiToSerialProxy extends Thread{
                             sendPacketToWiFi(new RawDataPacket(settingsPacket.ToByteArray()), Packet.WheelsRobotWiFiPacketType.Settings);
                         }
 
+                    }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.Text.getValue()){
+                        sendPacketToSerialPort(new TextPacket(packet), Packet.WheelsRobotUsartPacketType.Text);
                     }
 
                     packetsBuffer.remove(i);
@@ -160,6 +187,8 @@ public class WiFiToSerialProxy extends Thread{
                     RawDataPacket packet = packetParser.getPacket();
                     if(packet.getType() == Packet.WheelsRobotUsartPacketType.Telemetry.getValue()) {
                         sendPacketToWiFi(packet, Packet.WheelsRobotWiFiPacketType.Telemetry);
+                    }else if(packet.getType() == Packet.WheelsRobotUsartPacketType.Text.getValue()){
+                        sendPacketToWiFi(packet, Packet.WheelsRobotWiFiPacketType.Text);
                     }
                 }
             }
@@ -188,16 +217,22 @@ public class WiFiToSerialProxy extends Thread{
     //send packets from serial port to all wifi connections
     private void sendPacketToWiFi(RawDataPacket packet, Packet.WheelsRobotWiFiPacketType type){
 
-        for(int i=0; i<connections.size(); i++){
+        synchronized (connections) {
+            for (int i = 0; i < connections.size(); i++) {
 
-            byte[] data = packet.getData();
-            ByteBuffer buffer = ByteBuffer.allocate(4 + 1 + data.length);
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
-            buffer.putInt(data.length+1);
-            buffer.put((byte) type.getValue());
-            buffer.put(data);
+                byte[] data = packet.getData();
+                ByteBuffer buffer = ByteBuffer.allocate(4 + 1 + data.length);
+                buffer.order(ByteOrder.LITTLE_ENDIAN);
+                buffer.putInt(data.length + 1);
+                buffer.put((byte) type.getValue());
+                buffer.put(data);
 
-            connections.get(i).write(buffer.array());
+                //if connection has been closed or any other error - close this connection
+                if (!connections.get(i).write(buffer.array())) {
+                    connections.get(i).interrupt(); //stop thread
+                    connections.remove(i); //remove connection
+                }
+            }
         }
     }
 
@@ -235,6 +270,7 @@ public class WiFiToSerialProxy extends Thread{
             try {
                 out.write(data);
             }catch (IOException e){
+                e.printStackTrace();
                 return false;
             }
 
@@ -290,6 +326,14 @@ public class WiFiToSerialProxy extends Thread{
                     e.printStackTrace();
                 }
             }
+
+            try {
+                in.close();
+                out.close();
+                clientSocket.close();
+            }catch (IOException e){
+
+            }
         }
     }
 
@@ -302,9 +346,7 @@ public class WiFiToSerialProxy extends Thread{
             try {
                 FileOutputStream fileOutputStream = context.openFileOutput(filename, context.MODE_PRIVATE);
 
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
-                objectOutputStream.writeObject(packet);
-                objectOutputStream.close();
+                fileOutputStream.write(packet.ToByteArray());
 
                 fileOutputStream.close();
             } catch (FileNotFoundException e) {
@@ -322,14 +364,14 @@ public class WiFiToSerialProxy extends Thread{
             try {
                 FileInputStream fileInputStream = context.openFileInput(filename);
 
-                ObjectInputStream objectInputStreams = new ObjectInputStream(fileInputStream);
-                settingsPacket = (SettingsPacket) objectInputStreams.readObject();
-                objectInputStreams.close();
+                if(fileInputStream.available() > 0){
+                    byte[] buffer = new byte[fileInputStream.available()];
+                    fileInputStream.read(buffer);
+                    settingsPacket = new SettingsPacket(new RawDataPacket(buffer));
+                }
 
                 fileInputStream.close();
             } catch (IOException e) {
-
-            }catch (ClassNotFoundException e){
 
             }
 
