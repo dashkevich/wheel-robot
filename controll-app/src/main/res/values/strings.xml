@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Control Test</string>
+    <string name="reset">r</string>
+    <string name="connect">c</string>
+    <string name="s">s</string>
+    <string name="r">r</string>
+</resources>

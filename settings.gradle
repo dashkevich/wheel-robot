@@ -1,1 +1,2 @@
-include ':app'
+include ':platform-supervisor', ':libwheels'
+include ':controll-app'
