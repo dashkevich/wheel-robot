@@ -7,6 +7,7 @@
       <module fileurl="file://$PROJECT_DIR$/controll-app/controll-app.iml" filepath="$PROJECT_DIR$/controll-app/controll-app.iml" />
       <module fileurl="file://$PROJECT_DIR$/libwheels/libpackets.iml" filepath="$PROJECT_DIR$/libwheels/libpackets.iml" />
       <module fileurl="file://$PROJECT_DIR$/libwheels/libwheels.iml" filepath="$PROJECT_DIR$/libwheels/libwheels.iml" />
+      <module fileurl="file://$PROJECT_DIR$/opencvtests/opencvtests.iml" filepath="$PROJECT_DIR$/opencvtests/opencvtests.iml" />
       <module fileurl="file://$PROJECT_DIR$/platform-supervisor/platform-controller.iml" filepath="$PROJECT_DIR$/platform-supervisor/platform-controller.iml" />
       <module fileurl="file://$PROJECT_DIR$/platform-supervisor/platform-supervisor.iml" filepath="$PROJECT_DIR$/platform-supervisor/platform-supervisor.iml" />
       <module fileurl="file://$PROJECT_DIR$/wheel-robot.iml" filepath="$PROJECT_DIR$/wheel-robot.iml" />

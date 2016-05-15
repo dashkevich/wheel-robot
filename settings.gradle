@@ -1,2 +1,1 @@
-include ':platform-supervisor', ':libwheels'
-include ':controll-app'
+include ':platform-supervisor', ':controll-app', ':libwheels', ':opencvtests'
