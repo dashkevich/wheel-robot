@@ -1,5 +1,13 @@
 package robotics.wheels;
 
+import android.graphics.Color;
+
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -47,8 +55,6 @@ public class WiFiToSerialProxy extends Thread{
     WheelsVelocitiesPacket wheelsVelocitiesPacket;
     PlatformPosition platformPosition;
 
-    LinkedList<IRLidarData> lidarData;
-
     //type of last recieved control packet;
     Packet lastControlPacket;
     Packet.WheelsRobotUsartPacketType lastControlPacketType;
@@ -63,8 +69,6 @@ public class WiFiToSerialProxy extends Thread{
         pingTimer = new Timer();
         packetsBuffer = new LinkedList<>();
         this.context = context;
-
-        lidarData = new LinkedList<>();
 
         //костыль 3
         lastControlPacketType = Packet.WheelsRobotUsartPacketType.PlatformParameters;
@@ -193,21 +197,35 @@ public class WiFiToSerialProxy extends Thread{
 
                     RawDataPacket packet = packetParser.getPacket();
                     if(packet.getType() == Packet.WheelsRobotUsartPacketType.Telemetry.getValue()) {
-
                         sendPacketToWiFi(packet, Packet.WheelsRobotWiFiPacketType.Telemetry);
-
                     }else if(packet.getType() == Packet.WheelsRobotUsartPacketType.Text.getValue()){
-
                         sendPacketToWiFi(packet, Packet.WheelsRobotWiFiPacketType.Text);
 
                     }else if(packet.getType() == Packet.WheelsRobotUsartPacketType.IRLidarData.getValue()){
 
-                        lidarData.add(new IRLidarData(packet));
-                        if(lidarData.size() > 20){
-                            lidarData.remove(0);
-                        }
+                        IRLidarData irld = new IRLidarData(packet);
+                        LineData data = context.mChart.getData();
 
-                        //сюда пиши свой вызов графиков
+                        if(data != null) {
+                            ILineDataSet set = data.getDataSetByIndex(0);
+                            if (set == null) {
+                                set = new LineDataSet(null, "Dynamic Data");
+                                set.setAxisDependency(YAxis.AxisDependency.LEFT);
+                                set.setValueTextColor(Color.WHITE);
+                                set.setValueTextSize(9f);
+                                set.setDrawValues(false);
+
+                                data.addDataSet(set);
+                            }
+                            data.addXValue(irld.getAng() + "");
+                            data.addEntry(new Entry(irld.getDist(), set.getEntryCount()), 0);
+
+                            // let the chart know it's data has changed
+                            context.mChart.notifyDataSetChanged();
+                            context.mChart.setVisibleXRangeMaximum(6);
+                            context.mChart.setVisibleYRangeMaximum(15, YAxis.AxisDependency.LEFT);
+                            context.mChart.moveViewTo(data.getXValCount()-7, 50f, YAxis.AxisDependency.LEFT);
+                        }
                     }
                 }
             }
