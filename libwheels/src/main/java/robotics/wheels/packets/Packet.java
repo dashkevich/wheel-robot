@@ -7,11 +7,6 @@ package robotics.wheels.packets;
 abstract public class Packet {
 
 
-    /*
-    WheelsRobotWiFiPacketType { MotorsPower = 1, WheelsVelocities, PlatformParameters, Telemetry, Settings, GetSettings, Text };
-    WheelsRobotUsartPacketType : uint8_t { MotorsPower = 1, WheelsVelocities, PlatformParameters, Telemetry, Settings, Ping, Text };
-    * */
-
     public enum WheelsRobotWiFiPacketType {
 
         MotorsPower(1),
@@ -20,7 +15,9 @@ abstract public class Packet {
         Telemetry(4),
         Settings(5),
         GetSettings(6),
-        Text(7);
+        Text(7),
+        IRLidarData(8),
+        PlatformPosition(9);
 
         private int value;
 
@@ -41,7 +38,10 @@ abstract public class Packet {
         Telemetry(4),
         Settings(5),
         Ping(6),
-        Text(7);
+        Text(7),
+        IRLidarData(8),
+        PlatformPosition(9);
+
 
         private int value;
 

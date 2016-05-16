@@ -17,8 +17,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import robotics.wheels.packets.ControlPacket;
+import robotics.wheels.packets.IRLidarData;
 import robotics.wheels.packets.MotorsPowerPacket;
 import robotics.wheels.packets.Packet;
+import robotics.wheels.packets.PlatformPosition;
 import robotics.wheels.packets.RawDataPacket;
 import robotics.wheels.packets.SettingsPacket;
 import robotics.wheels.packets.TextPacket;
@@ -43,6 +45,9 @@ public class WiFiToSerialProxy extends Thread{
     MotorsPowerPacket motorsPowerPacket;
     SettingsPacket settingsPacket;
     WheelsVelocitiesPacket wheelsVelocitiesPacket;
+    PlatformPosition platformPosition;
+
+    LinkedList<IRLidarData> lidarData;
 
     //type of last recieved control packet;
     Packet.WheelsRobotWiFiPacketType lastControlPacketType;
@@ -57,6 +62,8 @@ public class WiFiToSerialProxy extends Thread{
         pingTimer = new Timer();
         packetsBuffer = new LinkedList<>();
         this.context = context;
+
+        lidarData = new LinkedList<>();
 
         //костыль 3
         lastControlPacketType = Packet.WheelsRobotWiFiPacketType.PlatformParameters;
@@ -99,6 +106,8 @@ public class WiFiToSerialProxy extends Thread{
                     sendPacketToSerialPort(motorsPowerPacket, Packet.WheelsRobotUsartPacketType.MotorsPower);
                 }else if(lastControlPacketType == Packet.WheelsRobotWiFiPacketType.WheelsVelocities){
                     sendPacketToSerialPort(wheelsVelocitiesPacket, Packet.WheelsRobotUsartPacketType.WheelsVelocities);
+                }else if(lastControlPacketType == Packet.WheelsRobotWiFiPacketType.PlatformPosition){
+                    sendPacketToSerialPort(platformPosition, Packet.WheelsRobotUsartPacketType.PlatformPosition);
                 }
                     context.runOnUiThread(new Runnable() {
                         @Override
@@ -170,7 +179,14 @@ public class WiFiToSerialProxy extends Thread{
                         }
 
                     }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.Text.getValue()){
+
                         sendPacketToSerialPort(new TextPacket(packet), Packet.WheelsRobotUsartPacketType.Text);
+
+                    }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.PlatformPosition.getValue()){
+
+                        this.platformPosition = new PlatformPosition(packet);
+                        lastControlPacketType = Packet.WheelsRobotWiFiPacketType.PlatformPosition;
+
                     }
 
                     packetsBuffer.remove(i);
@@ -187,6 +203,13 @@ public class WiFiToSerialProxy extends Thread{
                         sendPacketToWiFi(packet, Packet.WheelsRobotWiFiPacketType.Telemetry);
                     }else if(packet.getType() == Packet.WheelsRobotUsartPacketType.Text.getValue()){
                         sendPacketToWiFi(packet, Packet.WheelsRobotWiFiPacketType.Text);
+                    }else if(packet.getType() == Packet.WheelsRobotUsartPacketType.IRLidarData.getValue()){
+                        lidarData.add(new IRLidarData(packet));
+                        if(lidarData.size() > 20){
+                            lidarData.remove(0);
+                        }
+
+                        //сюда пиши свой вызов графиков
                     }
                 }
             }
