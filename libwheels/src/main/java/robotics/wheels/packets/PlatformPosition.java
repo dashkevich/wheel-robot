@@ -10,6 +10,7 @@ public class PlatformPosition extends Packet {
 
     private float x;
     private float y;
+    private float yaw;
 
     public PlatformPosition() {
 
@@ -22,10 +23,11 @@ public class PlatformPosition extends Packet {
     @Override
     public byte[] ToByteArray() {
         //convert java big endian to c/c++ little endian
-        ByteBuffer buffer = ByteBuffer.allocate(8);
+        ByteBuffer buffer = ByteBuffer.allocate(12);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         buffer.putFloat(x);
         buffer.putFloat(y);
+        buffer.putFloat(yaw);
         return buffer.array();
     }
 
@@ -36,5 +38,6 @@ public class PlatformPosition extends Packet {
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         this.x = buffer.getFloat();
         this.y = buffer.getFloat();
+        this.yaw = buffer.getFloat();
     }
 }
