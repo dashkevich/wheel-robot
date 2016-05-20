@@ -11,6 +11,7 @@ import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -68,8 +69,14 @@ public class SerialPort {
         return true;
     }
 
-    public void write(byte[] data){
-        mSerialIoManager.writeAsync(data);
+    public boolean write(byte[] data){
+        try {
+            mSerialIoManager.writeAsync(data);
+        }catch (BufferOverflowException e){
+            return false;
+        }
+
+        return true;
     }
 
     public void closeConnection(){

@@ -25,9 +25,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import robotics.wheels.packets.ControlPacket;
-import robotics.wheels.packets.IRLidarData;
+import robotics.wheels.packets.IRLidarDataPacket;
 import robotics.wheels.packets.MotorsPowerPacket;
 import robotics.wheels.packets.Packet;
+import robotics.wheels.packets.PingPacket;
 import robotics.wheels.packets.PlatformPosition;
 import robotics.wheels.packets.RawDataPacket;
 import robotics.wheels.packets.SettingsPacket;
@@ -49,11 +50,8 @@ public class WiFiToSerialProxy extends Thread{
     private Timer pingTimer;
 
     List<RawDataPacket> packetsBuffer;  //raw packets data from wifi connections
-    ControlPacket controlPacket;
-    MotorsPowerPacket motorsPowerPacket;
+
     SettingsPacket settingsPacket;
-    WheelsVelocitiesPacket wheelsVelocitiesPacket;
-    PlatformPosition platformPosition;
 
     //type of last recieved control packet;
     Packet lastControlPacket;
@@ -71,13 +69,13 @@ public class WiFiToSerialProxy extends Thread{
         this.context = context;
 
         //костыль 3
-        lastControlPacketType = Packet.WheelsRobotUsartPacketType.PlatformParameters;
-        controlPacket = new ControlPacket();
+        lastControlPacket = new ControlPacket();
         ByteBuffer bb = ByteBuffer.allocate(12);
         bb.putFloat(0);
         bb.putFloat(0);
         bb.putFloat(0);
-        controlPacket.FromRawPacket(new RawDataPacket(bb.array()));
+        lastControlPacket.FromRawPacket(new RawDataPacket(bb.array()));
+        lastControlPacketType = Packet.WheelsRobotUsartPacketType.PlatformParameters;
 
     }
 
@@ -93,14 +91,17 @@ public class WiFiToSerialProxy extends Thread{
     @Override
     public void run() {
 
+
         //read settings packet from file and send this to serial port
         settingsPacket = new SettingsPacketManager().readSettingsPacketFromFile();
         if(settingsPacket != null){
             sendPacketToSerialPort(settingsPacket, Packet.WheelsRobotUsartPacketType.Settings);
         }
 
+
         //запуск таймера отправки пакетов в ком порт с частотой 10Гц
         controlTimer.schedule(new TimerTask() {
+
             @Override
             public void run() {
 
@@ -115,12 +116,14 @@ public class WiFiToSerialProxy extends Thread{
             }
         }, 1000 , 100);
 
+
         //ping пакеты 5Гц
         pingTimer.schedule(new TimerTask() {
+            PingPacket pingPacket = new PingPacket();
 
             @Override
             public void run() {
-                serialPort.write(getPingPacket());
+                serialPort.write(pingPacket.getPingPacketData());
             }
         }, 1000, 200);
 
@@ -139,26 +142,22 @@ public class WiFiToSerialProxy extends Thread{
 
                     if(packet.getType() == Packet.WheelsRobotWiFiPacketType.WheelsVelocities.getValue()){
 
-                        this.wheelsVelocitiesPacket = new WheelsVelocitiesPacket(packet);
-                        lastControlPacket = wheelsVelocitiesPacket;
+                        lastControlPacket = new WheelsVelocitiesPacket(packet);
                         lastControlPacketType = Packet.WheelsRobotUsartPacketType.WheelsVelocities;
 
                     }else if (packet.getType() == Packet.WheelsRobotWiFiPacketType.PlatformParameters.getValue()) {
 
-                        this.controlPacket.FromRawPacket(packet);
-                        lastControlPacket = controlPacket;
+                        lastControlPacket = new ControlPacket(packet);
                         lastControlPacketType = Packet.WheelsRobotUsartPacketType.PlatformParameters;
 
                     }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.MotorsPower.getValue()){
 
-                        motorsPowerPacket = new MotorsPowerPacket(packet);
-                        lastControlPacket = motorsPowerPacket;
+                        lastControlPacket = new MotorsPowerPacket(packet);
                         lastControlPacketType = Packet.WheelsRobotUsartPacketType.MotorsPower;
 
                     }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.PlatformPosition.getValue()){
 
-                        this.platformPosition = new PlatformPosition(packet);
-                        lastControlPacket = platformPosition;
+                        lastControlPacket = new PlatformPosition(packet);
                         lastControlPacketType = Packet.WheelsRobotUsartPacketType.PlatformPosition;
 
                     }else if(packet.getType() == Packet.WheelsRobotWiFiPacketType.Settings.getValue()){
@@ -203,7 +202,7 @@ public class WiFiToSerialProxy extends Thread{
 
                     }else if(packet.getType() == Packet.WheelsRobotUsartPacketType.IRLidarData.getValue()){
 
-                        IRLidarData irld = new IRLidarData(packet);
+                        IRLidarDataPacket irld = new IRLidarDataPacket(packet);
                         LineData data = context.mChart.getData();
 
                         if(data != null) {
@@ -224,7 +223,7 @@ public class WiFiToSerialProxy extends Thread{
                             context.mChart.notifyDataSetChanged();
                             context.mChart.setVisibleXRangeMaximum(6);
                             context.mChart.setVisibleYRangeMaximum(15, YAxis.AxisDependency.LEFT);
-                            context.mChart.moveViewTo(data.getXValCount()-7, 50f, YAxis.AxisDependency.LEFT);
+                            context.mChart.moveViewTo(data.getXValCount() - 7, 50f, YAxis.AxisDependency.LEFT);
                         }
                     }
                 }
@@ -274,16 +273,7 @@ public class WiFiToSerialProxy extends Thread{
     }
 
 
-    //serial port ping packet
-    private byte[] getPingPacket() {
-        ByteBuffer bb = ByteBuffer.allocate(6);
 
-        bb.put("+IPD".getBytes()); // header
-        bb.put((byte)(1)); //data size
-        bb.put((byte) Packet.WheelsRobotUsartPacketType.Ping.getValue()); //data type
-
-        return bb.array();
-    }
 
 
     class CommunicationThread extends Thread {

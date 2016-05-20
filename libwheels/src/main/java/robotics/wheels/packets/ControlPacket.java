@@ -19,6 +19,10 @@ public class ControlPacket extends Packet{
         this.w = w;
     }
 
+    public ControlPacket(RawDataPacket rawDataPacket){
+       FromRawPacket(rawDataPacket);
+    }
+
     public float getVx() {
         return vx;
     }

@@ -7,7 +7,7 @@ import java.nio.ByteOrder;
  * Created by Бацька on 16.05.2016.
  */
 
-public class IRLidarData extends Packet {
+public class IRLidarDataPacket extends Packet {
 
     private float ang;
     private float dist;
@@ -28,11 +28,11 @@ public class IRLidarData extends Packet {
         this.dist = dist;
     }
 
-    public  IRLidarData(){
+    public IRLidarDataPacket(){
 
     }
 
-    public IRLidarData(RawDataPacket rawDataPacket){
+    public IRLidarDataPacket(RawDataPacket rawDataPacket){
         FromRawPacket(rawDataPacket);
     }
 

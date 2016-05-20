@@ -16,8 +16,7 @@ abstract public class Packet {
         Settings(5),
         GetSettings(6),
         Text(7),
-        IRLidarData(8),
-        PlatformPosition(9);
+        PlatformPosition(8);
 
         private int value;
 
