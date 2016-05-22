@@ -1,0 +1,55 @@
+apply plugin: 'com.android.model.application'
+
+model {
+    android {
+        compileSdkVersion = 23
+        buildToolsVersion = '23.0.3'
+
+        defaultConfig {
+            applicationId = 'org.opencv.samples.facedetect'
+            minSdkVersion.apiLevel = 16
+            targetSdkVersion.apiLevel = 23
+            versionCode = 1
+            versionName = '1.0'
+        }
+
+        ndk {
+            moduleName = 'detection_based_tracker'
+
+            cppFlags.addAll(['-Werror',
+                            // "--debug",
+                             '-frtti',
+                             '-fexceptions',
+                             '-I' + file('/home/rushmash/OpenCV-android-sdk/sdk/native/jni/include'),
+                             '-I' + file('src/main/jni')])
+
+            ldLibs.addAll(['android', 'log', 'stdc++', 'dl', 'z'])
+            stl = 'gnustl_static'
+        }
+
+        productFlavors {
+            create("arm7") {
+                ndk.with {
+                    abiFilters.add("armeabi-v7a")
+                    ldLibs.add("/home/rushmash/OpenCV-android-sdk/sdk/native/libs/" + "armeabi-v7a" + "/libopencv_java3.so")
+                }
+            }
+            create("arm8") {
+                ndk.with {
+                    abiFilters.add("arm64-v8a")
+                    ldLibs.add("/home/rushmash/OpenCV-android-sdk/sdk/native/libs/" + "arm64-v8a" + "/libopencv_java3.so")
+                }
+            }
+        }
+    }
+}
+
+repositories {
+    maven { url "https://jitpack.io" }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.github.ctodobom:OpenCV-3.1.0-Android:-SNAPSHOT'
+    testCompile 'junit:junit:4.12'
+}
